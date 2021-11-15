@@ -5,6 +5,41 @@ const path = require("path");
 const util = require("util");
 const moment = require("moment");
 const readFile = (filename) => util.promisify(fs.readFile)(filename, "utf-8");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv").config();
+
+const UrlSchema = new mongoose.Schema({
+  originUrl: {
+    type: String,
+    required: true,
+  },
+  shortUrl: {
+    type: String,
+    required: true,
+  },
+  views: {
+    type: Number,
+    required: true,
+  },
+  creatorDate: {
+    type: String,
+    required: true,
+  },
+});
+
+const Url = mongoose.model("Url", UrlSchema);
+mongoose.connect(
+  `mongodb+srv://yam:${process.env.PASSWORD}@database.foklg.mongodb.net/UrlShortner?retryWrites=true&w=majority`,
+  {
+    useNewUrlParser: true,
+  }
+);
+const db = mongoose.connection;
+
+db.on("error", console.error.bind(console, "connection error: "));
+db.once("open", async function () {
+  console.log("connected");
+});
 
 //DataBase class that has methods for DataBase use
 class DataBase {
@@ -23,7 +58,7 @@ class DataBase {
   static async #readDataBase() {
     //function that reads the database
     try {
-      const fileData = await readFile("./server/db.json");
+      const fileData = await Url.find({});
       return fileData;
     } catch (error) {
       throw error;
@@ -61,11 +96,7 @@ class DataBase {
   static async #writeUrl(newObj) {
     // function that updates the data base with the new objects
     try {
-      const dataBase = JSON.parse(await this.#readDataBase());
-      const objectsArr = dataBase.objects;
-      objectsArr.push(newObj);
-      dataBase.objects = objectsArr;
-      await fsAsync.writeFile("./server/db.json", JSON.stringify(dataBase));
+      await Url.insertMany(newObj);
       return newObj.shortUrl;
     } catch (error) {
       throw error;
@@ -74,10 +105,9 @@ class DataBase {
   static async #checkIfUrlExist(randomSequence) {
     // function that checks if url already exists in database
     try {
-      let dataBase = await this.#readDataBase();
-      dataBase = JSON.parse(dataBase);
-      for (let i = 0; i < dataBase.objects.length; i++) {
-        if (dataBase.objects[i].shortUrl === randomSequence) {
+      let dataBase = await Url.find({});
+      for (let i = 0; i < dataBase.length; i++) {
+        if (dataBase[i].shortUrl === randomSequence) {
           return true;
         }
       }
@@ -89,10 +119,9 @@ class DataBase {
   static async #isShortenExist(_originUrl) {
     // function that checks if the unique sequence we gave him already exists in database
     try {
-      let dataBase = await this.#readDataBase();
-      dataBase = JSON.parse(dataBase);
-      for (let i = 0; i < dataBase.objects.length; i++) {
-        if (dataBase.objects[i].originUrl === _originUrl) {
+      let dataBase = await Url.find({});
+      for (let i = 0; i < dataBase.length; i++) {
+        if (dataBase[i].originUrl === _originUrl) {
           return true;
         }
       }
@@ -105,10 +134,9 @@ class DataBase {
     // function that returns a short url
     try {
       let dataBase = await this.#readDataBase();
-      dataBase = JSON.parse(dataBase);
-      for (let i = 0; i < dataBase.objects.length; i++) {
-        if (dataBase.objects[i].originUrl === _originUrl) {
-          return dataBase.objects[i].shortUrl;
+      for (let i = 0; i < dataBase.length; i++) {
+        if (dataBase[i].originUrl === _originUrl) {
+          return dataBase[i].shortUrl;
         }
       }
     } catch (error) {
@@ -118,14 +146,16 @@ class DataBase {
   static async getOriginUrl(_shortUrl) {
     // functions that gets a shorturl and returns originalurl
     try {
-      let dataBase = await this.#readDataBase();
-      dataBase = JSON.parse(dataBase);
-      for (let i = 0; i < dataBase.objects.length; i++) {
-        if (dataBase.objects[i].shortUrl === _shortUrl) {
-          dataBase.objects[i].views++;
-          await fsAsync.writeFile("./server/db.json", JSON.stringify(dataBase));
-          console.log(dataBase.objects[i].originUrl);
-          return dataBase.objects[i].originUrl;
+      let dataBase = await Url.find({});
+      for (let i = 0; i < dataBase.length; i++) {
+        if (dataBase[i].shortUrl === _shortUrl) {
+          let _views = dataBase[i].views;
+          _views++;
+          await Url.updateOne(
+            { shortUrl: _shortUrl },
+            { $set: { views: _views } }
+          );
+          return dataBase[i].originUrl;
         }
       }
       return false;
@@ -137,10 +167,9 @@ class DataBase {
     // function that gets a shorturl and returns the url object
     try {
       let dataBase = await this.#readDataBase();
-      dataBase = JSON.parse(dataBase);
-      for (let i = 0; i < dataBase.objects.length; i++) {
-        if (dataBase.objects[i].shortUrl === _shortUrl) {
-          return dataBase.objects[i];
+      for (let i = 0; i < dataBase.length; i++) {
+        if (dataBase[i].shortUrl === _shortUrl) {
+          return dataBase[i];
         }
       }
     } catch (error) {
