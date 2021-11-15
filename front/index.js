@@ -6,7 +6,7 @@ import axios from "axios";
 const submitButton = document.querySelector("btn");
 
 //variables section
-const baseServerPath = "https://sexyurlshortner.herokuapp.com/";
+const baseServerPath = "https://sexyurlshortner.herokuapp.com";
 
 //send get post requst with the origin URL and return new sequence for route to this URL.
 const getShortenVersion = async (_originUrl) => {
