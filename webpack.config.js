@@ -9,7 +9,11 @@ const isProduction = process.env.NODE_ENV == "production";
 const stylesHandler = "style-loader";
 
 const config = {
-  entry: "./front/index.js",
+  entry: {
+    index: "./front/index.js",
+    login: "./loginFront/index.js",
+    signup: "./signUpFront/index.js",
+  },
   output: {
     path: path.resolve(__dirname, "dist"),
   },
@@ -19,7 +23,19 @@ const config = {
   },
   plugins: [
     new HtmlWebpackPlugin({
+      filename: "index.html",
       template: "./front/index.html",
+      chunks: [`index`],
+    }),
+    new HtmlWebpackPlugin({
+      filename: "login.html",
+      template: "./loginFront/index.html",
+      chunks: [`login`],
+    }),
+    new HtmlWebpackPlugin({
+      filename: "signup.html",
+      template: "./signUpFront/index.html",
+      chunks: [`signup`],
     }),
     //new FaviconsWebpackPlugin("./front/images/favicon (5).ico"),
 
